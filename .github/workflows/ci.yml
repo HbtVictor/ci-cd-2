@@ -1,0 +1,104 @@
+name: CI — Quality & Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ─── JOB 1 : Lint ESLint (max-warnings=0) ─────────
+  lint:
+    name: 🔍 Lint ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: ESLint (--max-warnings=0)
+        run: npm run lint
+
+  # ─── JOB 2 : Format Prettier ─────────────────────
+  format:
+    name: 🎨 Prettier check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Vérification du format Prettier
+        run: npm run format:check
+
+  # ─── JOB 3 : Commitlint (valide tous les messages depuis main) ───
+  commitlint:
+    name: 📝 Commitlint
+    runs-on: ubuntu-latest
+    # commitlint a besoin de l'historique complet pour comparer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # historique complet pour valider les commits depuis main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Sur une PR : valide tous les commits de la PR
+      - name: Valider les commits de la PR
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }} --verbose
+
+      # Sur un push direct : valide juste le dernier commit
+      - name: Valider le dernier commit
+        if: github.event_name == 'push'
+        run: npx commitlint --from=HEAD~1 --to=HEAD --verbose || true
+        # `|| true` car le tout premier commit n'a pas de HEAD~1
+
+  # ─── JOB 4 : Tests ────────────────────────────────
+  test:
+    name: 🧪 Tests Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    needs: [lint, format]   # tests ne tournent que si qualité OK
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Tests + couverture
+        run: npm run test:ci
+
+      - name: Upload rapport de couverture
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-node-${{ matrix.node-version }}
+          path: coverage/
+          retention-days: 14

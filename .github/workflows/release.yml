@@ -1,0 +1,91 @@
+name: Release
+
+# Déclenchée par un tag SemVer (ex: v1.0.0, v1.2.3)
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  release:
+    name: 🏷️ Release ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # nécessaire pour créer la GitHub Release
+      packages: write   # nécessaire pour pusher l'image Docker sur GHCR
+
+    steps:
+      - name: Checkout (full history pour le CHANGELOG)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # git-cliff a besoin de tout l'historique git
+
+      # ─── Tests bloquants avant release ─────────────────────────────
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+
+      # ─── Génération CHANGELOG depuis les Conventional Commits ──────
+      - name: Generate CHANGELOG with git-cliff
+        id: changelog
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: cliff.toml
+          args: --verbose --latest --strip header
+        env:
+          OUTPUT: CHANGELOG_RELEASE.md
+
+      # ─── Docker : build + push avec tags vX.Y.Z + latest ──────────
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image name en lowercase (requis par GHCR)
+        id: img
+        run: echo "name=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Docker metadata (tags SemVer + latest)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.img.outputs.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build & push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ─── Création de la GitHub Release ──────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: CHANGELOG_RELEASE.md
+          draft: false
+          prerelease: false

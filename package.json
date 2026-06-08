@@ -1,0 +1,65 @@
+{
+  "name": "ci-cd-2",
+  "version": "0.0.0",
+  "description": "TP S9/S10 — Pipeline qualité du code + versioning sémantique",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "jest",
+    "test:ci": "jest --ci --coverage --coverageReporters=lcov --coverageReporters=text --coverageReporters=json-summary",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.js --max-warnings=0",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "format": "prettier --write \"src/**/*.{js,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,json,md}\"",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HbtVictor/ci-cd-2.git"
+  },
+  "keywords": [
+    "ci-cd",
+    "github-actions",
+    "docker",
+    "semantic-versioning"
+  ],
+  "author": "HbtVictor",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HbtVictor/ci-cd-2/issues"
+  },
+  "homepage": "https://github.com/HbtVictor/ci-cd-2#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "jest": "^30.4.2",
+    "prettier": "^3.8.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/server.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    },
+    "coverageReporters": [
+      "lcov",
+      "text",
+      "json-summary"
+    ]
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

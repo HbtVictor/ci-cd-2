@@ -348,24 +348,26 @@ git commit -m "ajout truc"
 Le hook `commit-msg` (Husky + commitlint) a refusé immédiatement avec ce message d'erreur :
 
 ```
-⧗   input: ajout truc
+⧗   --- input ---
+ajout truc
 ✖   subject may not be empty [subject-empty]
 ✖   type may not be empty [type-empty]
-✖   subject min length [subject-min-length]
 
-✖   found 3 problems, 0 warnings
+✖   found 2 problems, 0 warnings
 ⓘ   Get help: https://github.com/conventional-changelog/commitlint/#what-is-commitlint
 
 husky - commit-msg script failed (code 1)
 ```
 
-Trois règles violées :
+Deux règles violées :
 
-- `type-empty` : pas de type au début (manque `feat:`, `fix:`, etc.)
-- `subject-empty` : sans type, commitlint considère qu'il n'y a pas de "sujet" structuré
-- `subject-min-length` : ma règle custom (subject ≥ 10 caractères) — le sujet "ajout truc" fait
-  10 caractères mais commitlint ne parvient pas à séparer type et subject sans le `:`, donc le
-  subject parsé est vide.
+- `type-empty` : pas de type au début (manque `feat:`, `fix:`, etc.).
+- `subject-empty` : sans le séparateur `:`, commitlint ne parvient pas à isoler un "subject"
+  structuré du reste — il considère donc le subject comme vide.
+
+(La règle custom `subject-min-length` n'apparaît pas dans cette erreur précise : commitlint
+n'évalue pas la longueur d'un subject qu'il n'arrive pas à parser. Pour la déclencher, il
+faudrait écrire `feat: abc` — type valide mais subject trop court.)
 
 Correction :
 

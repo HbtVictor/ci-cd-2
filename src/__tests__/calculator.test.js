@@ -1,5 +1,5 @@
 // src/__tests__/calculator.test.js
-const { add, subtract, multiply, divide } = require('../calculator');
+const { add, subtract, multiply, divide, modulo } = require('../calculator');
 
 describe('Calculator', () => {
   test('add : 2 + 3 doit retourner 5', () => {
@@ -36,5 +36,13 @@ describe('Calculator', () => {
 
   test('divide décimale : 1 / 3', () => {
     expect(divide(1, 3)).toBeCloseTo(0.333, 2);
+  });
+
+  test('modulo : 10 % 3 doit retourner 1', () => {
+    expect(modulo(10, 3)).toBe(1);
+  });
+
+  test('modulo : modulo par zéro lève une erreur', () => {
+    expect(() => modulo(10, 0)).toThrow('Modulo par zéro impossible');
   });
 });

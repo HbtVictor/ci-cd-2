@@ -38,7 +38,7 @@ jobs:
       # ─── Génération CHANGELOG depuis les Conventional Commits ──────
       - name: Generate CHANGELOG with git-cliff
         id: changelog
-        uses: orhun/git-cliff-action@v3
+        uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
           args: --verbose --latest --strip header
